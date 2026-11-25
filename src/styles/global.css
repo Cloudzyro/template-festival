@@ -1,0 +1,224 @@
+/* Colors and fonts live here. Change the tokens to restyle the whole site.
+   Stage colors are set per stage in src/data/festival.ts. */
+:root {
+  --paper: #f3eee3;
+  --paper-card: #fbf8f1;
+  --paper-raised: #e9e2d3;
+  --ink: #1b1f2a;
+  --ink-2: #474c58;
+  --ink-3: #676b75;
+  --line: rgb(27 31 42 / 0.1);
+  --line-strong: rgb(27 31 42 / 0.2);
+  --red: #e0472b;
+  --red-ink: #b2361d;
+  --max: 1200px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --font: "Bricolage Grotesque Variable", system-ui, sans-serif;
+  --mono: "DM Mono", ui-monospace, monospace;
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  overflow-x: hidden;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 500;
+  line-height: 1.05;
+}
+
+h2 {
+  font-size: clamp(2rem, 4.5vw, 3.25rem);
+  letter-spacing: -0.02em;
+  font-stretch: 85%;
+}
+
+h3 {
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+p {
+  margin: 0;
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.wrap {
+  width: min(100% - 2.5rem, var(--max));
+  margin-inline: auto;
+}
+
+.section {
+  padding-block: clamp(4rem, 9vw, 7rem);
+}
+
+.section-head {
+  display: grid;
+  gap: 1rem;
+  max-width: 44rem;
+  margin-bottom: 3rem;
+}
+
+.section-head p {
+  color: var(--ink-2);
+  font-size: 1.125rem;
+}
+
+.meta {
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 1.25rem;
+  white-space: nowrap;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font: inherit;
+  font-weight: 500;
+  font-size: 1rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 160ms var(--ease),
+    border-color 160ms var(--ease),
+    color 160ms var(--ease),
+    transform 120ms var(--ease);
+}
+.btn:active {
+  transform: scale(0.98);
+}
+.btn-primary {
+  background: var(--ink);
+  color: var(--paper);
+}
+.btn-primary:hover {
+  background: #343a4a;
+}
+.btn-secondary {
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+.btn-secondary:hover {
+  background: var(--paper-raised);
+}
+
+.skip {
+  position: absolute;
+  left: 1rem;
+  top: -4rem;
+  z-index: 100;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+}
+.skip:focus {
+  top: 1rem;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--c);
+  flex: none;
+}
+
+/* Day tabs, shared by the lineup and the timetable */
+.tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--paper-raised);
+}
+.tabs button {
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  border: 0;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background-color 160ms var(--ease), color 160ms var(--ease);
+}
+.tabs button[aria-selected="true"] {
+  background: var(--paper-card);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+}
+.tabs button .meta {
+  margin-left: 0.25rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

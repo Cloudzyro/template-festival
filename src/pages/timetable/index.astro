@@ -1,0 +1,392 @@
+---
+import Base from "../../layouts/Base.astro";
+import { artists, days, festival, sets, stages } from "../../data/festival";
+import { fmt, toMin } from "../../lib/time";
+
+const SLOT = 15; // minutes per grid row
+const artist = (slug: string) => artists.find((a) => a.slug === slug)!;
+const hours = (first: string, last: string) => {
+  const out: string[] = [];
+  for (let m = Math.ceil(toMin(first) / 60) * 60; m <= toMin(last); m += 60) {
+    out.push(`${String(m / 60).padStart(2, "0")}:00`);
+  }
+  return out;
+};
+---
+
+<Base title="Timetable" description={`Set times for every stage at ${festival.fullName} ${festival.edition}, ${festival.dates}. Save the sets you want to see.`}>
+  <section class="section tt">
+    <div class="wrap">
+      <div class="tt-head">
+        <div class="section-head">
+          <h1>Timetable</h1>
+          <p>Choose a set to read about the artist and save it to your plan. Your plan stays in this browser.</p>
+        </div>
+        <div class="controls">
+          <div class="tabs" role="tablist" aria-label="Festival day" hidden data-tabs>
+            {
+              days.map((d, i) => (
+                <button role="tab" aria-selected={i === 0 ? "true" : "false"} aria-controls={`grid-${d.id}`} id={`ttab-${d.id}`} data-day={d.id}>
+                  {d.label}
+                  <span class="meta">{d.date.replace("July ", "Jul ")}</span>
+                </button>
+              ))
+            }
+          </div>
+          <label class="only" hidden data-only>
+            <input type="checkbox" />
+            <span>Only my plan <span class="meta" data-count>(0)</span></span>
+          </label>
+        </div>
+      </div>
+
+      {
+        days.map((d) => {
+          const start = Math.floor(toMin(d.first) / 60) * 60;
+          const rows = Math.ceil((toMin(d.last) - start) / SLOT);
+          const row = (t: string) => Math.round((toMin(t) - start) / SLOT) + 2;
+          return (
+            <div class="day" id={`grid-${d.id}`} role="tabpanel" aria-labelledby={`ttab-${d.id}`} data-panel={d.id}>
+              <h2 class="day-title">
+                {d.label}, {d.date} <span class="meta">{d.gates}</span>
+              </h2>
+              <div class="scroller" tabindex="0" aria-label={`${d.label} timetable`}>
+                <div class="grid" style={`--rows:${rows}`}>
+                  {stages.map((st, i) => (
+                    <p class="col-head" style={`grid-column:${i + 2};--c:${st.color}`}>
+                      <span class="dot" /> {st.name}
+                    </p>
+                  ))}
+                  {hours(d.first, d.last).map((h) => (
+                    <>
+                      <span class="hour meta" style={`grid-row:${row(h)}`}>
+                        {fmt(h)}
+                      </span>
+                      <span class="hour-line" style={`grid-row:${row(h)}`} aria-hidden="true" />
+                    </>
+                  ))}
+                  {sets
+                    .filter((s) => s.day === d.id)
+                    .map((s) => {
+                      const a = artist(s.artist);
+                      const st = stages.find((x) => x.id === s.stage)!;
+                      const id = `${s.day}-${s.stage}-${s.start}`;
+                      return (
+                        <button
+                          class="set"
+                          type="button"
+                          style={`grid-column:${stages.indexOf(st) + 2};grid-row:${row(s.start)} / ${row(s.end)};--c:${st.color}`}
+                          data-id={id}
+                          data-name={a.name}
+                          data-genre={a.genre}
+                          data-from={a.from}
+                          data-bio={a.bio}
+                          data-stage={st.name}
+                          data-when={`${d.label}, ${fmt(s.start)} to ${fmt(s.end)}`}
+                        >
+                          <span class="set-name">{a.name}</span>
+                          <span class="set-time">
+                            {fmt(s.start)} to {fmt(s.end)}
+                          </span>
+                          <span class="saved-mark" aria-hidden="true">
+                            Saved
+                          </span>
+                        </button>
+                      );
+                    })}
+                </div>
+              </div>
+            </div>
+          );
+        })
+      }
+    </div>
+  </section>
+
+  <dialog class="sheet" aria-labelledby="sheet-name">
+    <form method="dialog">
+      <p class="meta" data-f="stage"></p>
+      <h2 id="sheet-name" data-f="name"></h2>
+      <p class="sheet-when" data-f="when"></p>
+      <p class="meta"><span data-f="genre"></span> from <span data-f="from"></span></p>
+      <p class="sheet-bio" data-f="bio"></p>
+      <div class="sheet-actions">
+        <button class="btn btn-primary" type="button" data-save>Save to my plan</button>
+        <button class="btn btn-secondary" value="close">Close</button>
+      </div>
+    </form>
+  </dialog>
+</Base>
+
+<script>
+  const KEY = "kettle-lake-plan";
+  const read = (): string[] => {
+    try {
+      return JSON.parse(localStorage.getItem(KEY) || "[]");
+    } catch {
+      return [];
+    }
+  };
+  let plan = new Set(read());
+  const save = () => {
+    try {
+      localStorage.setItem(KEY, JSON.stringify([...plan]));
+    } catch {
+      /* storage blocked: the plan lasts until the page closes */
+    }
+  };
+
+  const setButtons = [...document.querySelectorAll<HTMLButtonElement>(".set")];
+  const onlyLabel = document.querySelector<HTMLElement>("[data-only]")!;
+  const only = onlyLabel.querySelector("input")!;
+  const count = document.querySelector<HTMLElement>("[data-count]")!;
+  onlyLabel.hidden = false;
+
+  const paint = () => {
+    setButtons.forEach((b) => {
+      const saved = plan.has(b.dataset.id!);
+      b.classList.toggle("is-saved", saved);
+      b.classList.toggle("is-dim", only.checked && !saved);
+      b.setAttribute("aria-label", `${b.dataset.name}, ${b.dataset.stage}, ${b.dataset.when}${saved ? ", saved" : ""}`);
+    });
+    count.textContent = `(${plan.size})`;
+  };
+  only.addEventListener("change", paint);
+
+  // Day tabs
+  const tabs = document.querySelector<HTMLElement>("[data-tabs]")!;
+  tabs.hidden = false;
+  const tabButtons = [...tabs.querySelectorAll<HTMLButtonElement>("button")];
+  const panels = [...document.querySelectorAll<HTMLElement>("[data-panel]")];
+  const show = (day: string) => {
+    tabButtons.forEach((b) => b.setAttribute("aria-selected", String(b.dataset.day === day)));
+    panels.forEach((p) => (p.hidden = p.dataset.panel !== day));
+    history.replaceState(null, "", `#${day}`);
+  };
+  tabButtons.forEach((b, i) => {
+    b.addEventListener("click", () => show(b.dataset.day!));
+    b.addEventListener("keydown", (e) => {
+      const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+      if (!step) return;
+      const next = tabButtons[(i + step + tabButtons.length) % tabButtons.length];
+      next.focus();
+      show(next.dataset.day!);
+    });
+  });
+  const fromHash = location.hash.slice(1);
+  show(tabButtons.some((b) => b.dataset.day === fromHash) ? fromHash : tabButtons[0].dataset.day!);
+
+  // Set details
+  const dialog = document.querySelector<HTMLDialogElement>("dialog.sheet")!;
+  const saveBtn = dialog.querySelector<HTMLButtonElement>("[data-save]")!;
+  let current: HTMLButtonElement | null = null;
+  const label = () => (saveBtn.textContent = plan.has(current!.dataset.id!) ? "Remove from my plan" : "Save to my plan");
+  setButtons.forEach((b) =>
+    b.addEventListener("click", () => {
+      current = b;
+      dialog.querySelectorAll<HTMLElement>("[data-f]").forEach((el) => {
+        el.textContent = b.dataset[el.dataset.f!] ?? "";
+      });
+      label();
+      dialog.showModal();
+    }),
+  );
+  saveBtn.addEventListener("click", () => {
+    const id = current!.dataset.id!;
+    if (plan.has(id)) plan.delete(id);
+    else plan.add(id);
+    save();
+    label();
+    paint();
+  });
+  dialog.addEventListener("click", (e) => {
+    if (e.target === dialog) dialog.close();
+  });
+  dialog.addEventListener("close", () => current?.focus());
+  paint();
+</script>
+
+<style>
+  .tt {
+    padding-top: clamp(3rem, 6vw, 4.5rem);
+  }
+  h1 {
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    letter-spacing: -0.03em;
+    font-stretch: 80%;
+  }
+  .tt-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+  .tt-head .section-head {
+    margin-bottom: 0;
+  }
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+  }
+  .only {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9375rem;
+    cursor: pointer;
+  }
+  .only input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--ink);
+  }
+  .day + .day {
+    margin-top: 3rem;
+  }
+  .day-title {
+    font-size: 1.25rem;
+    letter-spacing: 0;
+    font-stretch: 100%;
+    display: flex;
+    gap: 0.75rem;
+    align-items: baseline;
+    margin-bottom: 1rem;
+  }
+  .scroller {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--paper-card);
+  }
+  .grid {
+    position: relative;
+    display: grid;
+    grid-template-columns: 72px repeat(3, minmax(180px, 1fr));
+    grid-template-rows: 48px repeat(var(--rows), 18px);
+    column-gap: 8px;
+    padding: 0 12px 16px 0;
+    min-width: 680px;
+  }
+  .col-head {
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    font-size: 0.9375rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .hour {
+    grid-column: 1;
+    padding-left: 12px;
+    transform: translateY(-8px);
+    font-size: 0.75rem;
+  }
+  .hour-line {
+    grid-column: 2 / -1;
+    border-top: 1px solid var(--line);
+  }
+  .set {
+    position: relative;
+    z-index: 1;
+    margin: 2px 0;
+    text-align: left;
+    font: inherit;
+    color: var(--ink);
+    background: color-mix(in srgb, var(--c) 14%, var(--paper-card));
+    border: 0;
+    border-left: 4px solid var(--c);
+    border-radius: 6px;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    cursor: pointer;
+    overflow: hidden;
+    transition:
+      background-color 160ms var(--ease),
+      opacity 160ms var(--ease);
+  }
+  .set:hover {
+    background: color-mix(in srgb, var(--c) 24%, var(--paper-card));
+  }
+  .set-name {
+    font-weight: 500;
+    line-height: 1.2;
+  }
+  .set-time {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--ink-2);
+  }
+  .saved-mark {
+    display: none;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--ink);
+  }
+  .set.is-saved {
+    background: var(--c);
+    color: #fff;
+  }
+  .set.is-saved .set-time,
+  .set.is-saved .saved-mark {
+    color: rgb(255 255 255 / 0.85);
+  }
+  .set.is-saved .saved-mark {
+    display: block;
+  }
+  .set.is-dim {
+    opacity: 0.3;
+  }
+
+  .sheet {
+    border: 0;
+    border-radius: 16px;
+    padding: 0;
+    width: min(92vw, 460px);
+    background: var(--paper-card);
+    color: var(--ink);
+    box-shadow: 0 24px 48px rgb(0 0 0 / 0.18);
+  }
+  .sheet::backdrop {
+    background: rgb(27 31 42 / 0.4);
+  }
+  .sheet form {
+    padding: 24px;
+    display: grid;
+    gap: 8px;
+  }
+  .sheet h2 {
+    font-size: 2rem;
+    font-stretch: 80%;
+  }
+  .sheet-when {
+    font-weight: 500;
+  }
+  .sheet-bio {
+    color: var(--ink-2);
+    margin-top: 8px;
+  }
+  .sheet-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .sheet[open] {
+      animation: rise 240ms var(--ease);
+    }
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+    }
+  }
+</style>

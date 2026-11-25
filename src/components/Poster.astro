@@ -1,0 +1,129 @@
+---
+// The festival poster: printed-look artwork in the stage inks, with the headliners
+// for each day. Names come from `headliners` in src/data/festival.ts.
+import { artists, days, festival, headliners, stages } from "../data/festival";
+
+const name = (slug: string) => artists.find((a) => a.slug === slug)?.name ?? slug;
+const more = artists.length - Object.values(headliners).flat().length;
+const names = stages.map((s) => s.name);
+const stageNames = names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : names[0];
+---
+
+<figure class="poster" aria-label={`${festival.fullName} ${festival.edition} poster with the headliners for each day`}>
+  <svg class="art" viewBox="0 0 400 210" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <rect width="400" height="210" fill="#f6f0e2"></rect>
+    <circle cx="258" cy="104" r="70" fill="#f0b323" class="ink"></circle>
+    <path d="M0 132 C60 96 120 92 180 118 S300 150 400 108 V210 H0Z" fill="#e0472b" class="ink"></path>
+    <path d="M0 160 C50 148 90 150 140 160 S240 176 290 164 S370 148 400 156 V210 H0Z" fill="#2f5bd3"></path>
+    <path d="M0 184 C40 178 80 178 120 184 S200 194 250 186 S340 176 400 182" fill="none" stroke="#f6f0e2" stroke-width="3"></path>
+    <path d="M30 196 C70 192 110 192 150 196 S230 202 280 198" fill="none" stroke="#f6f0e2" stroke-width="2"></path>
+    <g fill="#1b1f2a" class="pines">
+      <path d="M38 132 l10 -34 l10 34z"></path>
+      <path d="M52 128 l8 -26 l8 26z"></path>
+      <path d="M340 118 l9 -30 l9 30z"></path>
+      <path d="M356 114 l7 -22 l7 22z"></path>
+    </g>
+  </svg>
+  <div class="bill">
+    <p class="bill-top">
+      <span>{festival.fullName}</span>
+      <span>{festival.dates}</span>
+    </p>
+    {
+      days.map((d) => (
+        <div class="day">
+          <p class="day-label">
+            {d.label} <span>{d.date}</span>
+          </p>
+          <p class="names">
+            {headliners[d.id].map((slug, i) => (
+              <span class={`n n${i}`}>{name(slug)}</span>
+            ))}
+          </p>
+        </div>
+      ))
+    }
+    <p class="bill-foot">And {more} more across the {stageNames}</p>
+  </div>
+</figure>
+
+<style>
+  .poster {
+    margin: 0;
+    background: #f6f0e2;
+    border-radius: 6px;
+    box-shadow:
+      0 1px 2px rgb(0 0 0 / 0.06),
+      0 24px 48px -16px rgb(27 31 42 / 0.22);
+    overflow: hidden;
+    rotate: 1.5deg;
+  }
+  .art {
+    width: 100%;
+    aspect-ratio: 400 / 210;
+    height: auto;
+  }
+  .ink {
+    mix-blend-mode: multiply;
+  }
+  .bill {
+    padding: 16px 24px 20px;
+    display: grid;
+    gap: 12px;
+    text-align: center;
+  }
+  .bill-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--ink-2);
+    border-bottom: 1px solid var(--line-strong);
+    padding-bottom: 12px;
+  }
+  .day-label {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--red-ink);
+    margin-bottom: 4px;
+  }
+  .day-label span {
+    color: var(--ink-3);
+  }
+  .names {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: baseline;
+    column-gap: 0.6em;
+    line-height: 1.05;
+    font-stretch: 75%;
+  }
+  .n0 {
+    flex-basis: 100%;
+    font-size: clamp(1.75rem, 3.4vw, 2.5rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .n1,
+  .n2 {
+    font-size: clamp(1.0625rem, 1.8vw, 1.3125rem);
+    font-weight: 500;
+    color: var(--ink-2);
+  }
+  .bill-foot {
+    font-size: 0.8125rem;
+    color: var(--ink-3);
+    border-top: 1px solid var(--line-strong);
+    padding-top: 12px;
+  }
+  @media (max-width: 520px) {
+    .poster {
+      rotate: 0deg;
+    }
+    .bill {
+      padding: 16px 16px 20px;
+    }
+  }
+</style>
